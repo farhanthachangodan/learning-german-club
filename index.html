@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anna's Series Audiobooks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: three views switched by #hash — landing (one full-screen image), login (card over 50% landing), dashboard (dark music-app style). */
+:root {
+  --bg: #19191b;
+  --surface: #26262a;
+  --surface-2: #323237;
+  --ink: #f4f4f6;
+  --muted: #9a9aa3;
+  --accent: #ffffff;
+  --font: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid #8fb8ff; outline-offset: 2px; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ---------- Landing ---------- */
+.landing-bg {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 75%, rgba(233,185,73,.10), transparent 50%),
+    radial-gradient(ellipse at 75% 30%, rgba(70,110,170,.28), transparent 55%),
+    linear-gradient(160deg, #1f2430 0%, #19191b 55%, #141416 100%);
+  background-size: cover; background-position: center;
+}
+/* When the real image is uploaded as landing.jpg it replaces the placeholder above */
+.landing-bg.has-image { background: #0f1830 url("landing.jpg") 30% center / cover no-repeat; }
+.landing-placeholder {
+  position: absolute; left: 50%; bottom: 32px; transform: translateX(-50%);
+  font-size: 13px; color: rgba(255,255,255,.55); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1);
+  padding: 6px 14px; border-radius: 999px; white-space: nowrap;
+}
+.landing-bg.has-image .landing-placeholder { display: none; }
+.landing-top {
+  position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center;
+  padding: 22px 28px;
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.25); }
+.logo-mark { width: 30px; height: 30px; border-radius: 9px; background: #fff; color: #19191b; display: grid; place-items: center; font-weight: 700; text-shadow: none; }
+.btn-login {
+  background: rgba(255,255,255,.92); color: #19191b; border: 0; border-radius: 999px; padding: 10px 22px; font-weight: 600;
+  box-shadow: 0 4px 18px rgba(0,0,0,.18);
+}
+
+/* ---------- Login ---------- */
+#login .landing-bg { opacity: .5; }
+#login { background: #0d0d0f; min-height: 100%; }
+.login-wrap { position: fixed; inset: 0; display: grid; place-items: center; padding: 20px; }
+.login-card {
+  width: 100%; max-width: 380px; background: rgba(25,25,27,.92); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px; padding: 32px 28px; display: grid; gap: 14px; backdrop-filter: blur(8px);
+}
+.login-card h1 { margin: 0; font-size: 24px; }
+.login-card p { margin: 0 0 6px; color: var(--muted); }
+.login-card label { display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
+.login-card input {
+  background: var(--surface); border: 1px solid var(--surface-2); color: var(--ink); border-radius: 999px;
+  padding: 12px 18px; font: inherit;
+}
+.btn-primary { background: #fff; color: #19191b; border: 0; border-radius: 999px; padding: 12px; font-weight: 700; margin-top: 6px; }
+.login-foot { font-size: 13px; color: var(--muted); text-align: center; }
+.login-foot a, .back { color: var(--ink); }
+.back { position: fixed; top: 22px; left: 28px; text-decoration: none; font-weight: 600; text-shadow: 0 1px 8px rgba(0,0,0,.3); }
+
+/* ---------- Dashboard ---------- */
+.dash { padding: 0 20px 120px; max-width: 1240px; margin: 0 auto; }
+.nav { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 18px 0 24px; }
+.nav .logo { text-shadow: none; }
+.tabs { display: flex; gap: 2px; background: var(--surface); padding: 3px; border-radius: 999px; }
+.tab { background: none; border: 0; padding: 7px 18px; border-radius: 999px; color: var(--muted); font-weight: 500; font-size: 14px; }
+.tab.on { background: var(--surface-2); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.nav-right { display: flex; gap: 10px; justify-content: flex-end; align-items: center; }
+.icon-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--surface); border: 0; display: grid; place-items: center; }
+.avatar { width: 38px; height: 38px; border-radius: 12px; background: #f6b6c0; color: #5a2430; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+
+h2 { font-size: 21px; font-weight: 600; margin: 8px 0 16px; letter-spacing: -.01em; }
+.row-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.see-all { background: var(--surface); border: 0; border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+
+.grid6 { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+.card {
+  position: relative; aspect-ratio: 1; border-radius: 18px; padding: 14px; color: #fff; border: 0; text-align: left;
+  display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden;
+}
+.card .badge { width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,.25); display: grid; place-items: center; }
+.card .word { position: absolute; inset: 0; display: grid; place-items: center; font-size: 30px; font-weight: 700; opacity: .9; }
+.card .meta { position: relative; }
+.card .meta b { display: block; font-weight: 600; font-size: 15px; }
+.card .meta span { font-size: 12px; opacity: .85; }
+
+.chips { display: flex; gap: 8px; margin: -4px 0 18px; flex-wrap: wrap; }
+.chip { background: var(--surface); border: 0; border-radius: 999px; padding: 6px 14px; font-size: 13px; color: var(--muted); }
+.chip.on { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+
+.tile { background: none; border: 0; padding: 0; text-align: left; }
+.art { position: relative; aspect-ratio: 1; border-radius: 16px; display: grid; place-items: center; font-weight: 700; font-size: 26px; color: #fff; overflow: hidden; }
+.art .play {
+  position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.25); opacity: 0; transition: opacity .2s;
+}
+.tile:hover .art .play, .tile.playing .art .play { opacity: 1; }
+.tile b { display: block; margin-top: 10px; font-weight: 600; }
+.tile span { font-size: 13px; color: var(--muted); }
+.soon { filter: saturate(.35) brightness(.75); }
+
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 14px; overflow-x: auto; }
+.wide { aspect-ratio: 16/9; border-radius: 16px; display: flex; align-items: flex-end; padding: 14px; font-weight: 600; color: #fff; }
+section { margin-bottom: 30px; }
+/* Thin scrollbars with fully rounded ends */
+* { scrollbar-width: thin; scrollbar-color: #4a4a50 transparent; }
+::-webkit-scrollbar { height: 6px; width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #4a4a50; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #66666d; }
+
+/* Player bar */
+.player {
+  position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); width: min(680px, calc(100% - 32px));
+  background: rgba(43,43,48,.92); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,.06); border-radius: 999px; padding: 8px 18px 8px 8px; display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+.p-thumb { width: 44px; height: 44px; border-radius: 999px; flex: none; background: linear-gradient(135deg,#f2a65a,#e2557a); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+.p-info { min-width: 0; width: 140px; }
+.p-info b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-info span { font-size: 12px; color: var(--muted); }
+.p-ctrl { display: flex; align-items: center; gap: 10px; }
+.p-ctrl button { background: none; border: 0; padding: 4px; display: grid; place-items: center; }
+.p-ctrl .pp { width: 34px; height: 34px; border-radius: 999px; background: #fff; }
+.p-bar { flex: 1; height: 4px; background: #4a4a50; border-radius: 4px; position: relative; min-width: 60px; }
+.p-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: #fff; border-radius: 4px; }
+.p-dot { position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: #fff; transform: translate(-50%,-50%); left: 0%; }
+.p-time { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.p-extra { display: flex; gap: 8px; }
+.p-extra button { background: none; border: 0; padding: 4px; display: grid; place-items: center; }
+@media (max-width: 760px) {
+  .p-extra, .p-time { display: none; }
+  .tabs .tab { padding: 8px 10px; }
+  .nav { grid-template-columns: auto 1fr auto; gap: 8px; }
+  .nav .logo span:last-child { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5v14l11-7z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h2v14H6zM20 5v14L9 12z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path fill="currentColor" d="M16 5h2v14h-2zM4 5v14l11-7z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-gem" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M6 4h12l3 5-9 11L3 9zM3 9h18M9 4l3 16 3-16"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M4 11V9a3 3 0 013-3h11M15 3l3 3-3 3M20 13v2a3 3 0 01-3 3H6M9 21l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3 6h4l10 12h4M17 3l3 3-3 3M3 18h4l3-3.5M14 9.5L17 6h4M17 15l3 3-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-loop" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 010 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 8v4l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+</svg>
+
+<!-- ============ 1. LANDING ============ -->
+<div class="view" id="v-landing">
+  <div class="landing-bg"><span class="landing-placeholder">Your landing image goes here (1920 × 1080)</span></div>
+  <div class="landing-top">
+    <div class="logo"><span class="logo-mark">G</span><span>Learning German Club</span></div>
+    <button class="btn-login" type="button" data-go="login">Login</button>
+  </div>
+</div>
+
+<!-- ============ 2. LOGIN ============ -->
+<div class="view" id="login">
+  <div class="landing-bg"><span class="landing-placeholder">Your landing image goes here (1920 × 1080)</span></div>
+  <a class="back" href="#">← Back</a>
+  <div class="login-wrap">
+    <form class="login-card" id="login-form">
+      <h1>Willkommen!</h1>
+      <p>Log in to listen to Anna's audiobooks.</p>
+      <label for="email">Email<input id="email" type="email" placeholder="you@example.com" autocomplete="email"></label>
+      <label for="password">Password<input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></label>
+      <button class="btn-primary" type="submit">Log in</button>
+      <div class="login-foot">No account yet? <a href="#dashboard">Sign up free</a></div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ 3. DASHBOARD ============ -->
+<div class="view" id="dashboard">
+  <div class="dash">
+    <nav class="nav">
+      <div class="logo"><span class="logo-mark">G</span><span>Learning German Club</span></div>
+      <div class="tabs">
+        <button class="tab on" type="button">Home</button>
+        <button class="tab" type="button">Playlist</button>
+      </div>
+      <div class="nav-right">
+        <button class="icon-btn" type="button" aria-label="Search"><svg width="18" height="18"><use href="#i-search"/></svg></button>
+        <div class="avatar" title="Your account">AN</div>
+      </div>
+    </nav>
+
+    <section>
+      <h2>Recently played</h2>
+      <div class="grid6">
+        <button class="card" type="button" style="background:linear-gradient(160deg,#f7c3a3,#ee8d6b)"><span class="word">Hallo!</span><span class="meta"><b>Mix</b><span>4 episodes · 20 mins</span></span></button>
+        <button class="card" type="button" style="background:linear-gradient(160deg,#f9d3e4,#e8a0c9)"><span class="word">Danke</span><span class="meta"><b>Flughafen</b><span>Episode 1 · Audiobook</span></span></button>
+        <button class="card" type="button" style="background:linear-gradient(160deg,#3d7fe0,#1f4fb8)"><span class="word">Tschüss</span><span class="meta"><b>Chill ✨</b><span>12 phrases · 1h 2m</span></span></button>
+        <button class="card" type="button" style="background:linear-gradient(160deg,#cfe7c4,#8fbf86)"><span class="word">Bitte</span><span class="meta"><b>Im Café</b><span>Coming soon</span></span></button>
+        <button class="card" type="button" style="background:linear-gradient(160deg,#a9c9f3,#5d8fe0)"><span class="word">Ja!</span><span class="meta"><b>Mix</b><span>10 episodes · 1 hour</span></span></button>
+        <button class="card" type="button" style="background:linear-gradient(160deg,#55555c,#2c2c31)"><span class="word">Gute Nacht</span><span class="meta"><b>Late Night Listening</b><span>32 episodes · 10 hours</span></span></button>
+      </div>
+    </section>
+
+    <section>
+      <div class="row-head"><h2>Episodes</h2><button class="see-all" type="button">See All <svg width="14" height="14"><use href="#i-arrow"/></svg></button></div>
+      <div class="chips">
+        <button class="chip on" type="button">All</button>
+        <button class="chip" type="button">A1</button>
+        <button class="chip" type="button">A2</button>
+        <button class="chip" type="button">Dialogues</button>
+        <button class="chip" type="button">Grammar tips</button>
+      </div>
+      <div class="grid6">
+        <button class="tile" type="button" data-play="Ankunft am Flughafen|Episode 1 · Anna & Prof. Max"><div class="art" style="background:linear-gradient(135deg,#f2a65a,#e2557a)">✈︎<span class="play"><svg width="40" height="40"><use href="#i-play"/></svg></span></div><b>Ankunft am Flughafen</b><span>Episode 1 · A1</span></button>
+        <button class="tile" type="button"><div class="art soon" style="background:linear-gradient(135deg,#2c2c31,#6c6c78)">U-Bahn</div><b>Mit der U-Bahn</b><span>Coming soon</span></button>
+        <button class="tile" type="button"><div class="art soon" style="background:linear-gradient(135deg,#efe6d8,#b9a78c);color:#3a2e1d">Brezel</div><b>In der Bäckerei</b><span>Coming soon</span></button>
+        <button class="tile" type="button"><div class="art soon" style="background:linear-gradient(135deg,#46464c,#1f1f23)">€</div><b>Im Supermarkt</b><span>Coming soon</span></button>
+        <button class="tile" type="button"><div class="art soon" style="background:linear-gradient(135deg,#c7b8a8,#8a7a6c)">Kaffee</div><b>Im Café</b><span>Coming soon</span></button>
+        <button class="tile" type="button"><div class="art soon" style="background:#101012">〰︎</div><b>Bei Tante Sarah</b><span>Coming soon</span></button>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="player" role="region" aria-label="Player">
+    <div class="p-thumb">✈︎</div>
+    <div class="p-info"><b id="p-title">Ankunft am Flughafen</b><span id="p-sub">Episode 1 · Anna & Prof. Max</span></div>
+    <div class="p-ctrl">
+      <button type="button" aria-label="Previous"><svg width="16" height="16"><use href="#i-prev"/></svg></button>
+      <button class="pp" type="button" id="pp" aria-label="Play"><svg width="16" height="16" style="color:#19191b"><use href="#i-play"/></svg></button>
+      <button type="button" aria-label="Next"><svg width="16" height="16"><use href="#i-next"/></svg></button>
+    </div>
+    <div class="p-bar" id="p-bar"><div class="p-fill" id="p-fill"></div><div class="p-dot" id="p-dot"></div></div>
+    <div class="p-time" id="p-time">00:00 / 00:00</div>
+    <div class="p-extra">
+      <button type="button" aria-label="Repeat"><svg width="16" height="16"><use href="#i-repeat"/></svg></button>
+      <button type="button" aria-label="Volume"><svg width="16" height="16"><use href="#i-vol"/></svg></button>
+    </div>
+  </div>
+  <audio id="audio" src="audio/episode-1.mp3" preload="none"></audio>
+</div>
+
+<script>
+// ---- Simple page switching: #login, #dashboard, or nothing = landing ----
+function show() {
+  var h = location.hash.replace('#', '');
+  var id = (h === 'login' || h === 'dashboard') ? h : 'v-landing';
+  document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === id); });
+  document.body.style.overflow = id === 'dashboard' ? 'auto' : 'hidden';
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', show);
+show();
+document.querySelectorAll('[data-go]').forEach(function (b) {
+  b.addEventListener('click', function () { location.hash = b.getAttribute('data-go'); });
+});
+document.getElementById('login-form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  location.hash = 'dashboard';   // demo only: real login needs a backend later
+});
+
+// ---- Use landing.jpg if it has been uploaded ----
+var img = new Image();
+img.onload = function () { document.querySelectorAll('.landing-bg').forEach(function (b) { b.classList.add('has-image'); }); };
+img.src = 'landing.jpg';
+
+// ---- Player ----
+var audio = document.getElementById('audio');
+var pp = document.getElementById('pp');
+function fmt(s) { s = Math.floor(s || 0); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+function setIcon(playing) {
+  pp.querySelector('use').setAttribute('href', playing ? '#i-pause' : '#i-play');
+  pp.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+function toggle() {
+  if (audio.paused) {
+    var p = audio.play();
+    if (p && p.catch) p.catch(function () {
+      document.getElementById('p-sub').textContent = 'Audio coming soon';
+      setIcon(false);
+    });
+  } else { audio.pause(); }
+}
+pp.addEventListener('click', toggle);
+audio.addEventListener('play', function () { setIcon(true); });
+audio.addEventListener('pause', function () { setIcon(false); });
+audio.addEventListener('timeupdate', function () {
+  var pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  document.getElementById('p-fill').style.width = pct + '%';
+  document.getElementById('p-dot').style.left = pct + '%';
+  document.getElementById('p-time').textContent = fmt(audio.currentTime) + ' / ' + fmt(audio.duration);
+});
+document.getElementById('p-bar').addEventListener('click', function (e) {
+  if (!audio.duration) return;
+  var r = this.getBoundingClientRect();
+  audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
+});
+document.querySelectorAll('[data-play]').forEach(function (t) {
+  t.addEventListener('click', function () {
+    var parts = t.getAttribute('data-play').split('|');
+    document.getElementById('p-title').textContent = parts[0];
+    document.getElementById('p-sub').textContent = parts[1];
+    toggle();
+  });
+});
+</script>
+</body>
+</html>
