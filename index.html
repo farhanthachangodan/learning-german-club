@@ -73,6 +73,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn-primary { background: #fff; color: #19191b; border: 0; border-radius: 999px; padding: 12px; font-weight: 700; margin-top: 6px; }
 .login-foot { font-size: 13px; color: var(--muted); text-align: center; }
 .login-foot a, .back { color: var(--ink); }
+.link-btn { background: none; border: 0; padding: 0; color: var(--ink); font-weight: 600; text-decoration: underline; font-size: 13px; }
+.auth-msg { font-size: 13px; padding: 10px 14px; border-radius: 14px; background: rgba(255,90,90,.12); color: #ffb3b3; }
+.auth-msg.ok { background: rgba(110,200,140,.14); color: #a8e6bd; }
+.btn-primary:disabled { opacity: .6; cursor: wait; }
+.logout-btn { background: var(--surface); border: 0; border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.logout-btn:hover { color: var(--ink); }
 .back { position: fixed; top: 22px; left: 28px; text-decoration: none; font-weight: 600; text-shadow: 0 1px 8px rgba(0,0,0,.3); }
 
 /* ---------- Dashboard ---------- */
@@ -152,6 +158,7 @@ section { margin-bottom: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -186,12 +193,13 @@ section { margin-bottom: 30px; }
   <a class="back" href="#">← Back</a>
   <div class="login-wrap">
     <form class="login-card" id="login-form">
-      <h1>Willkommen!</h1>
-      <p>Log in to listen to Anna's audiobooks.</p>
-      <label for="email">Email<input id="email" type="email" placeholder="you@example.com" autocomplete="email"></label>
-      <label for="password">Password<input id="password" type="password" placeholder="••••••••" autocomplete="current-password"></label>
-      <button class="btn-primary" type="submit">Log in</button>
-      <div class="login-foot">No account yet? <a href="#dashboard">Sign up free</a></div>
+      <h1 id="auth-title">Willkommen!</h1>
+      <p id="auth-sub">Log in to listen to Anna's audiobooks.</p>
+      <label for="email">Email<input id="email" type="email" placeholder="you@example.com" autocomplete="email" required></label>
+      <label for="password">Password<input id="password" type="password" placeholder="At least 6 characters" autocomplete="current-password" minlength="6" required></label>
+      <div class="auth-msg" id="auth-msg" role="alert" hidden></div>
+      <button class="btn-primary" type="submit" id="auth-btn">Log in</button>
+      <div class="login-foot"><span id="auth-switch-text">No account yet?</span> <button type="button" class="link-btn" id="auth-switch">Sign up free</button></div>
     </form>
   </div>
 </div>
@@ -207,7 +215,8 @@ section { margin-bottom: 30px; }
       </div>
       <div class="nav-right">
         <button class="icon-btn" type="button" aria-label="Search"><svg width="18" height="18"><use href="#i-search"/></svg></button>
-        <div class="avatar" title="Your account">AN</div>
+        <div class="avatar" id="avatar" title="Your account">?</div>
+        <button class="logout-btn" type="button" id="logout">Log out</button>
       </div>
     </nav>
 
@@ -263,23 +272,97 @@ section { margin-bottom: 30px; }
 </div>
 
 <script>
-// ---- Simple page switching: #login, #dashboard, or nothing = landing ----
+// ================= REAL LOGIN (Supabase) =================
+// Supabase project (publishable key is safe to be public):
+var SUPABASE_URL = 'https://breliwbninhqaszfzomg.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_6I9qARevTv0ekAyfjgJdOw_i8kWQYm_';
+
+var sb = null;
+try {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { flowType: 'pkce' } });
+} catch (e) { console.error('Supabase not configured', e); }
+var session = null;
+var mode = 'login'; // or 'signup'
+
 function show() {
   var h = location.hash.replace('#', '');
+  if (h === 'dashboard' && !session) { h = 'login'; history.replaceState(null, '', '#login'); }
+  if (h === 'login' && session) { h = 'dashboard'; history.replaceState(null, '', '#dashboard'); }
   var id = (h === 'login' || h === 'dashboard') ? h : 'v-landing';
   document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.id === id); });
   document.body.style.overflow = id === 'dashboard' ? 'auto' : 'hidden';
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', show);
-show();
 document.querySelectorAll('[data-go]').forEach(function (b) {
-  b.addEventListener('click', function () { location.hash = b.getAttribute('data-go'); });
+  b.addEventListener('click', function () { location.hash = session ? 'dashboard' : b.getAttribute('data-go'); });
 });
-document.getElementById('login-form').addEventListener('submit', function (e) {
+
+function msg(text, ok) {
+  var m = document.getElementById('auth-msg');
+  if (!text) { m.hidden = true; return; }
+  m.textContent = text; m.className = 'auth-msg' + (ok ? ' ok' : ''); m.hidden = false;
+}
+function setMode(m) {
+  mode = m; msg('');
+  var signup = m === 'signup';
+  document.getElementById('auth-title').textContent = signup ? 'Create your account' : 'Willkommen!';
+  document.getElementById('auth-sub').textContent = signup ? 'Free account. Listen to every audiobook.' : "Log in to listen to Anna's audiobooks.";
+  document.getElementById('auth-btn').textContent = signup ? 'Sign up' : 'Log in';
+  document.getElementById('auth-switch-text').textContent = signup ? 'Already have an account?' : 'No account yet?';
+  document.getElementById('auth-switch').textContent = signup ? 'Log in' : 'Sign up free';
+  document.getElementById('password').setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+}
+document.getElementById('auth-switch').addEventListener('click', function () { setMode(mode === 'login' ? 'signup' : 'login'); });
+
+document.getElementById('login-form').addEventListener('submit', async function (e) {
   e.preventDefault();
-  location.hash = 'dashboard';   // demo only: real login needs a backend later
+  if (!sb) { msg('Login is not set up yet. Please try again later.'); return; }
+  var email = document.getElementById('email').value.trim();
+  var password = document.getElementById('password').value;
+  var btn = document.getElementById('auth-btn');
+  btn.disabled = true; msg('');
+  try {
+    if (mode === 'signup') {
+      var res = await sb.auth.signUp({ email: email, password: password, options: { emailRedirectTo: location.origin + location.pathname } });
+      if (res.error) throw res.error;
+      if (res.data.session) { location.hash = 'dashboard'; }
+      else { msg('Almost done! Check your email and click the confirmation link, then log in.', true); setTimeout(function(){ setModeKeepMsg('login'); }, 0); }
+    } else {
+      var r2 = await sb.auth.signInWithPassword({ email: email, password: password });
+      if (r2.error) throw r2.error;
+      location.hash = 'dashboard';
+    }
+  } catch (err) {
+    var t = (err && err.message) || 'Something went wrong.';
+    if (/invalid login/i.test(t)) t = 'Wrong email or password. Please try again.';
+    if (/email not confirmed/i.test(t)) t = 'Please confirm your email first. Check your inbox for the link.';
+    if (/already registered/i.test(t)) t = 'This email already has an account. Please log in.';
+    msg(t);
+  } finally { btn.disabled = false; }
 });
+function setModeKeepMsg(m) { var el = document.getElementById('auth-msg'); var t = el.textContent, c = el.className; setMode(m); el.textContent = t; el.className = c; el.hidden = false; }
+
+document.getElementById('logout').addEventListener('click', async function () {
+  if (sb) await sb.auth.signOut();
+  location.hash = '';
+});
+
+function updateUser() {
+  var a = document.getElementById('avatar');
+  var email = session && session.user && session.user.email;
+  a.textContent = email ? email.slice(0, 2).toUpperCase() : '?';
+  a.title = email || 'Your account';
+}
+
+if (sb) {
+  sb.auth.getSession().then(function (r) { session = r.data.session; updateUser(); show(); });
+  sb.auth.onAuthStateChange(function (event, s2) {
+    session = s2; updateUser();
+    if (event === 'SIGNED_IN' && location.hash !== '#dashboard') location.hash = 'dashboard';
+    show();
+  });
+} else { show(); }
 
 // ---- Use landing.jpg if it has been uploaded ----
 var img = new Image();
